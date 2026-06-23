@@ -1,2 +1,29 @@
-/* For information on how to create your own theme, please refer to:
-http://ionicframework.com/docs/theming/ */
+/* App identity — "شرح الصورة"
+   Light theme, teal/emerald primary with an amber accent (the logo spark).
+   For theming docs: http://ionicframework.com/docs/theming/ */
+
+:root {
+  /* Primary — teal / emerald */
+  --ion-color-primary: #0d9488;
+  --ion-color-primary-rgb: 13, 148, 136;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-contrast-rgb: 255, 255, 255;
+  --ion-color-primary-shade: #0b8278;
+  --ion-color-primary-tint: #259f94;
+
+  /* Secondary / accent — amber (matches the logo spark) */
+  --ion-color-secondary: #f59e0b;
+  --ion-color-secondary-rgb: 245, 158, 11;
+  --ion-color-secondary-contrast: #000000;
+  --ion-color-secondary-contrast-rgb: 0, 0, 0;
+  --ion-color-secondary-shade: #d88b0a;
+  --ion-color-secondary-tint: #f6a823;
+
+  /* Light, neutral surfaces */
+  --ion-background-color: #f6f8f8;
+  --ion-background-color-rgb: 246, 248, 248;
+  --ion-text-color: #1b2524;
+  --ion-text-color-rgb: 27, 37, 36;
+  --ion-toolbar-background: #ffffff;
+  --ion-item-background: #ffffff;
+}
