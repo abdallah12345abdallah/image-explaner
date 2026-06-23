@@ -1,0 +1,17 @@
+{
+  "name": "image-explainer-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Backend proxy: receives a document image and returns an Arabic explanation via Gemini vision.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.0.0",
+    "express": "^5.0.0"
+  }
+}
