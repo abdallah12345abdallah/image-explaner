@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">وضوح</string>
+    <string name="title_activity_main">وضوح</string>
+    <string name="package_name">ai.dqq.wuduh</string>
+    <string name="custom_url_scheme">ai.dqq.wuduh</string>
+</resources>
