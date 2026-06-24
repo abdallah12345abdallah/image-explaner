@@ -52,6 +52,19 @@ const SCHEMA = {
       type: "string",
       description: "شرح موجز وواضح للمستند بالعربية بجملتين أو ثلاث.",
     },
+    appointment_datetime: {
+      type: "string",
+      description:
+        "إن كان المستند موعدًا وأمكن تحديد التاريخ، تاريخ ووقت الموعد بصيغة ISO 8601 المحلية بدون منطقة زمنية، مثل 2026-07-15T10:30:00. إن لم يُذكر الوقت استخدم T00:00:00. اتركه فارغًا إن لم يكن موعدًا أو لا يوجد تاريخ.",
+    },
+    appointment_date: {
+      type: "string",
+      description: "تاريخ الموعد بصيغة YYYY-MM-DD إن وُجد، وإلا فارغ.",
+    },
+    appointment_time: {
+      type: "string",
+      description: "وقت الموعد بصيغة 24 ساعة HH:MM إن وُجد، وإلا فارغ.",
+    },
   },
   required: [
     "document_type",
@@ -62,13 +75,19 @@ const SCHEMA = {
     "location_ar",
     "action_required_ar",
     "summary_ar",
+    "appointment_datetime",
+    "appointment_date",
+    "appointment_time",
   ],
 };
 
 const SYSTEM_PROMPT =
   "أنت مساعد يقرأ صور المستندات (بأي لغة) ويشرحها للمستخدم بالعربية الفصحى المبسطة. " +
   "اقرأ النص الموجود في الصورة بدقة. إذا كان المستند موعدًا، استخرج التاريخ والوقت والمكان والمطلوب من الشخص. " +
-  "إذا لم تتوفر معلومة، اترك حقلها فارغًا ولا تختلق أي تفاصيل.";
+  "إذا لم تتوفر معلومة، اترك حقلها فارغًا ولا تختلق أي تفاصيل. " +
+  "إذا كان المستند موعدًا واستطعت تحديد التاريخ، أعطِ أيضًا appointment_datetime بصيغة ISO 8601 المحلية، " +
+  "واحسب السنة الصحيحة اعتمادًا على تاريخ اليوم المُعطى لك، وإن كان التاريخ نسبيًا (غدًا، الأسبوع القادم) فاحسبه من تاريخ اليوم. " +
+  "لا تخمّن وقتًا غير مذكور؛ استخدم 00:00 إن لم يُذكر الوقت.";
 
 app.get("/health", (_req, res) => res.json({ ok: true }));
 
@@ -101,7 +120,10 @@ app.post("/api/explain", async (req, res) => {
                 },
               },
               {
-                text: "اقرأ هذا المستند واشرحه بالعربية. حدّد نوعه، وإن كان موعدًا فاذكر التاريخ والوقت والمكان والمطلوب من الشخص.",
+                text:
+                  `تاريخ اليوم هو ${new Date().toISOString().slice(0, 10)}. ` +
+                  "اقرأ هذا المستند واشرحه بالعربية. حدّد نوعه، وإن كان موعدًا فاذكر التاريخ والوقت والمكان والمطلوب من الشخص، " +
+                  "وأعطِ appointment_datetime بصيغة ISO إن أمكن.",
               },
             ],
           },
@@ -109,7 +131,7 @@ app.post("/api/explain", async (req, res) => {
         generationConfig: {
           responseMimeType: "application/json",
           responseSchema: SCHEMA,
-          maxOutputTokens: 2048,
+          maxOutputTokens: 3072,
           // gemini-2.5-flash is a "thinking" model; thoughts eat the output
           // budget and can truncate the JSON. Disable thinking for this task.
           thinkingConfig: { thinkingBudget: 0 },
