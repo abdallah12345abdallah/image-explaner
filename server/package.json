@@ -9,6 +9,7 @@
     "node": ">=18"
   },
   "scripts": {
+    "build": "echo no build step needed",
     "start": "node index.js",
     "dev": "node --watch index.js"
   },
