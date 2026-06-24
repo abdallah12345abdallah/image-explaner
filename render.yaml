@@ -1,0 +1,16 @@
+# Render Blueprint — deploys the backend proxy (server/) as a free web service.
+# In Render: New + → Blueprint → pick this repo → it reads this file.
+# You'll be asked to paste GEMINI_API_KEY (kept secret, not in git).
+services:
+  - type: web
+    name: wuduh-api
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm install
+    startCommand: node index.js
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
