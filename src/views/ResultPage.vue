@@ -1,24 +1,24 @@
 <template>
   <ion-page>
-    <ion-content :fullscreen="true" dir="rtl" class="result">
+    <ion-content :fullscreen="true" :dir="dir" class="result">
       <!-- empty state -->
       <div v-if="!data" class="empty">
         <ion-icon :icon="documentTextOutline" class="empty-ico"></ion-icon>
-        <p>لا توجد نتيجة بعد.</p>
+        <p>{{ t("result.noResult") }}</p>
         <button class="cta" @click="goHome">
           <ion-icon :icon="homeOutline"></ion-icon>
-          العودة للرئيسية
+          {{ t("result.backHome") }}
         </button>
       </div>
 
       <template v-else>
         <!-- hero banner -->
         <header class="rhero" :class="{ 'no-img': !preview }">
-          <img v-if="preview" :src="preview" alt="الصورة" class="rhero-img" />
+          <img v-if="preview" :src="preview" alt="" class="rhero-img" />
           <div class="rhero-overlay"></div>
 
-          <button class="rback" aria-label="رجوع" @click="goHome">
-            <ion-icon :icon="chevronForwardOutline"></ion-icon>
+          <button class="rback" :aria-label="t('common.back')" @click="goHome">
+            <ion-icon :icon="backIcon"></ion-icon>
           </button>
 
           <div class="rhero-text">
@@ -26,7 +26,7 @@
               <span class="rtype">{{ data.document_type }}</span>
               <span v-if="data.is_appointment" class="rbadge">
                 <ion-icon :icon="calendarOutline"></ion-icon>
-                موعد
+                {{ t("result.appointment") }}
               </span>
             </div>
             <h1 class="rtitle">{{ data.title_ar }}</h1>
@@ -38,7 +38,7 @@
           <section class="card summary-card" style="--i: 0">
             <h2 class="card-h">
               <ion-icon :icon="sparklesOutline"></ion-icon>
-              الملخص
+              {{ t("result.summary") }}
             </h2>
             <p class="summary">{{ data.summary_ar }}</p>
           </section>
@@ -59,24 +59,37 @@
               <div class="d-text">
                 <p class="d-label">{{ d.label }}</p>
                 <h3 class="d-value">{{ d.value }}</h3>
-                <span v-if="d.map" class="d-hint">اضغط لعرضه على الخريطة</span>
+                <span v-if="d.map" class="d-hint">{{ t("result.tapMap") }}</span>
               </div>
               <ion-icon v-if="d.map" :icon="navigateOutline" class="d-go"></ion-icon>
             </div>
           </section>
 
-          <button class="cta" :style="{ '--i': details.length + 1 }" @click="goHome">
+          <button class="cta" :style="{ '--i': details.length + 1 }" @click="openSave">
+            <ion-icon :icon="notificationsOutline"></ion-icon>
+            {{ data.is_appointment ? t("result.saveAppt") : t("result.addAsAppt") }}
+          </button>
+
+          <button class="cta ghost" :style="{ '--i': details.length + 2 }" @click="goAnalyze">
             <ion-icon :icon="cameraOutline"></ion-icon>
-            تحليل صورة أخرى
+            {{ t("result.analyzeAnother") }}
           </button>
         </main>
       </template>
     </ion-content>
+
+    <save-appointment-modal v-model:open="saveOpen" :initial="saveInitial" @save="onSave" />
   </ion-page>
 </template>
 
 <script setup>
-import { IonPage, IonContent, IonIcon, useIonRouter } from "@ionic/vue";
+import {
+  IonPage,
+  IonContent,
+  IonIcon,
+  useIonRouter,
+  toastController,
+} from "@ionic/vue";
 import {
   calendarOutline,
   timeOutline,
@@ -88,13 +101,26 @@ import {
   documentTextOutline,
   homeOutline,
   navigateOutline,
+  notificationsOutline,
+  chevronBackOutline,
 } from "ionicons/icons";
-import { computed } from "vue";
+import { computed, ref } from "vue";
+import { t, dir } from "@/i18n";
 import { resultStore } from "@/stores/result";
+import { addAppointment } from "@/stores/appointments";
+import { hasPermission } from "@/services/notifications";
+import SaveAppointmentModal from "@/components/SaveAppointmentModal.vue";
 
 const ionRouter = useIonRouter();
+// back chevron: right in RTL, left in LTR
+const backIcon = computed(() =>
+  dir.value === "rtl" ? chevronForwardOutline : chevronBackOutline
+);
 function goHome() {
-  ionRouter.push("/home", "back");
+  ionRouter.push("/tabs/home", "back");
+}
+function goAnalyze() {
+  ionRouter.push("/tabs/scan", "back");
 }
 
 function openMap(query) {
@@ -107,18 +133,43 @@ function openMap(query) {
 const data = computed(() => resultStore.data);
 const preview = computed(() => resultStore.previewUrl);
 
+// --- save appointment flow ---
+const saveOpen = ref(false);
+const saveInitial = computed(() => {
+  const d = data.value || {};
+  return {
+    title: d.title_ar || d.document_type || t("modal.defaultTitle"),
+    datetimeISO: d.appointment_datetime || "",
+    location: d.location_ar || "",
+  };
+});
+function openSave() {
+  saveOpen.value = true;
+}
+async function onSave(payload) {
+  await addAppointment(payload);
+  const granted = await hasPermission();
+  const toast = await toastController.create({
+    message: granted ? t("appts.saved") : t("appts.savedNoPerm"),
+    duration: 2600,
+    color: granted ? "success" : "warning",
+    position: "top",
+  });
+  await toast.present();
+}
+
 const details = computed(() => {
   const d = data.value;
   if (!d) return [];
   const out = [];
   if (d.date_ar)
-    out.push({ icon: calendarOutline, label: "التاريخ", value: d.date_ar, tone: "teal" });
+    out.push({ icon: calendarOutline, label: t("result.date"), value: d.date_ar, tone: "teal" });
   if (d.time_ar)
-    out.push({ icon: timeOutline, label: "الوقت", value: d.time_ar, tone: "amber" });
+    out.push({ icon: timeOutline, label: t("result.time"), value: d.time_ar, tone: "amber" });
   if (d.location_ar)
     out.push({
       icon: locationOutline,
-      label: "المكان",
+      label: t("result.place"),
       value: d.location_ar,
       tone: "slate",
       map: true,
@@ -126,7 +177,7 @@ const details = computed(() => {
   if (d.action_required_ar)
     out.push({
       icon: checkmarkCircleOutline,
-      label: "المطلوب منك",
+      label: t("result.actionRequired"),
       value: d.action_required_ar,
       tone: "teal",
     });
@@ -362,6 +413,13 @@ const details = computed(() => {
 }
 .cta:active { transform: scale(0.98); }
 .cta ion-icon { font-size: 1.25rem; }
+.cta.ghost {
+  margin-top: 10px;
+  background: #fff;
+  color: var(--ion-color-primary);
+  border: 1px solid rgba(13, 148, 136, 0.3);
+  box-shadow: none;
+}
 
 /* ---------- empty ---------- */
 .empty {

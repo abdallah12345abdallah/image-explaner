@@ -38,6 +38,13 @@ import '@ionic/vue/css/display.css';
 /* Theme variables */
 import './theme/variables.css';
 
+/* App data + reminders bootstrap */
+import { loadLocale } from './i18n';
+import { loadSettings } from './stores/settings';
+import { loadAppointments, rescheduleAll } from './stores/appointments';
+import { loadHistory } from './stores/history';
+import { registerTapHandler } from './services/notifications';
+
 /* Modern page transition: cross-fade + subtle zoom/slide (direction-aware) */
 const pageTransition = (_baseEl: HTMLElement, opts: any) => {
   const { enteringEl, leavingEl, direction } = opts;
@@ -80,8 +87,26 @@ const app = createApp(App)
   .use(IonicVue, { navAnimation: pageTransition })
   .use(router);
 
-router.isReady().then(() => {
+router.isReady().then(async () => {
+  // Apply saved language + direction before first paint to avoid a flash.
+  await loadLocale();
   app.mount('#app');
+  // Load persisted data, re-arm reminders (survives reboot), and route
+  // notification taps to the reminders tab.
+  bootstrap();
 });
+
+async function bootstrap() {
+  try {
+    await loadSettings();
+    await loadAppointments();
+    await loadHistory();
+    await rescheduleAll();
+    await registerTapHandler(router);
+  } catch (e) {
+    // non-fatal — app still runs without persisted data
+    console.warn('bootstrap error', e);
+  }
+}
 
 defineCustomElements(window);

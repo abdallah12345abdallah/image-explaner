@@ -1,27 +1,39 @@
 import { createRouter, createWebHistory } from '@ionic/vue-router';
 import { RouteRecordRaw } from 'vue-router';
-import HomePage from '../views/HomePage.vue'
+import TabsPage from '../views/TabsPage.vue';
+import HomeDashboard from '../views/HomeDashboard.vue';
 
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
-    redirect: '/home'
+    redirect: '/tabs/home',
   },
   {
-    path: '/home',
-    name: 'Home',
-    component: HomePage
+    path: '/tabs/',
+    component: TabsPage,
+    children: [
+      { path: '', redirect: '/tabs/home' },
+      { path: 'home', name: 'Home', component: HomeDashboard },
+      { path: 'scan', name: 'Scan', component: () => import('../views/ScanPage.vue') },
+      { path: 'reminders', name: 'Reminders', component: () => import('../views/AppointmentsPage.vue') },
+      { path: 'history', name: 'History', component: () => import('../views/HistoryPage.vue') },
+    ],
   },
   {
     path: '/result',
     name: 'Result',
-    component: () => import('../views/ResultPage.vue')
-  }
-]
+    component: () => import('../views/ResultPage.vue'),
+  },
+  {
+    path: '/settings',
+    name: 'Settings',
+    component: () => import('../views/SettingsPage.vue'),
+  },
+];
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  routes
-})
+  routes,
+});
 
-export default router
+export default router;
