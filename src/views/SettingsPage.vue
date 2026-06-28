@@ -49,13 +49,22 @@
           </button>
           <ion-icon v-else-if="perm === 'granted'" :icon="checkmarkCircleOutline" class="ok"></ion-icon>
         </div>
+
+        <h2 class="section-h">{{ t("auth.account") }}</h2>
+        <div class="card row">
+          <div class="acct">
+            <p class="lbl">{{ authStore.profile?.name || authStore.user?.email }}</p>
+            <small class="hint" dir="ltr">{{ authStore.user?.email }}</small>
+          </div>
+          <button class="logout" @click="logout">{{ t("auth.logout") }}</button>
+        </div>
       </div>
     </ion-content>
   </ion-page>
 </template>
 
 <script setup>
-import { IonPage, IonContent, IonIcon, toastController } from "@ionic/vue";
+import { IonPage, IonContent, IonIcon, toastController, useIonRouter } from "@ionic/vue";
 import { checkmarkCircleOutline } from "ionicons/icons";
 import AppNavbar from "@/components/AppNavbar.vue";
 import { ref, computed, onMounted } from "vue";
@@ -69,6 +78,13 @@ import {
 } from "@/i18n";
 import { settingsStore, saveSettings } from "@/stores/settings";
 import { getPermissionState, requestPermission } from "@/services/notifications";
+import { authStore, signOut } from "@/stores/auth";
+
+const ionRouter = useIonRouter();
+async function logout() {
+  await signOut();
+  ionRouter.push("/login", "root", "replace");
+}
 
 const languages = LANGUAGES;
 const leadOptions = computed(() => i18nLeadOptions());
@@ -144,6 +160,14 @@ onMounted(refreshPerm);
   font-family: "Cairo", sans-serif; font-weight: 700; cursor: pointer;
 }
 .ok { color: #16a34a; font-size: 1.6rem; }
+.acct { min-width: 0; }
+.acct .hint { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+.logout {
+  flex: 0 0 auto;
+  border: 1px solid rgba(220,38,38,0.3); border-radius: 999px; padding: 8px 18px;
+  background: #fef2f2; color: #b91c1c;
+  font-family: "Cairo", sans-serif; font-weight: 700; cursor: pointer;
+}
 .about { display: flex; align-items: center; gap: 14px; }
 .about-logo { width: 48px; height: 48px; }
 .about strong { display: block; font-size: 1.05rem; color: #1b2524; }

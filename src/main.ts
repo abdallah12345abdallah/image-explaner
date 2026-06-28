@@ -40,6 +40,7 @@ import './theme/variables.css';
 
 /* App data + reminders bootstrap */
 import { loadLocale } from './i18n';
+import { initAuth } from './stores/auth';
 import { loadSettings } from './stores/settings';
 import { loadAppointments, rescheduleAll } from './stores/appointments';
 import { loadHistory } from './stores/history';
@@ -87,9 +88,15 @@ const app = createApp(App)
   .use(IonicVue, { navAnimation: pageTransition })
   .use(router);
 
+// Restore any saved session up front. The router guard awaits `authReady`
+// (resolved inside initAuth), so this must start before router.isReady()
+// can settle the first navigation.
+const authStarted = initAuth();
+
 router.isReady().then(async () => {
   // Apply saved language + direction before first paint to avoid a flash.
   await loadLocale();
+  await authStarted;
   app.mount('#app');
   // Load persisted data, re-arm reminders (survives reboot), and route
   // notification taps to the reminders tab.
