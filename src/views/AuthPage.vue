@@ -87,22 +87,34 @@
                         </div>
                       </div>
 
-                      <div class="field" :class="{ focus: focused === 'nat' }">
-                        <label for="nat">{{ t("auth.nationality") }}</label>
-                        <div class="control">
-                          <input
-                            id="nat"
-                            v-model="nationality"
-                            type="text"
-                            @focus="focused = 'nat'"
-                            @blur="focused = ''"
-                          />
-                        </div>
+                      <div class="field">
+                        <label>{{ t("auth.nationality") }}</label>
+                        <button type="button" class="control select" @click="openPicker">
+                          <template v-if="selectedCountry">
+                            <img
+                              class="flag-img"
+                              :src="flagUrl(selectedCountry.code)"
+                              :srcset="`${flagUrl(selectedCountry.code, 80)} 2x`"
+                              alt=""
+                            />
+                            <span class="sel-name">{{ countryName(selectedCountry) }}</span>
+                            <span class="sel-dial" dir="ltr">{{ selectedCountry.dial }}</span>
+                          </template>
+                          <span v-else class="sel-ph">{{ t("auth.selectNationality") }}</span>
+                          <ion-icon :icon="chevronDownOutline" class="chev" />
+                        </button>
                       </div>
 
                       <div class="field" :class="{ focus: focused === 'phone' }">
                         <label for="phone">{{ t("auth.phone") }}</label>
                         <div class="control">
+                          <img
+                            v-if="selectedCountry"
+                            class="flag-img"
+                            :src="flagUrl(selectedCountry.code)"
+                            :srcset="`${flagUrl(selectedCountry.code, 80)} 2x`"
+                            alt=""
+                          />
                           <input
                             id="phone"
                             v-model="phone"
@@ -110,7 +122,7 @@
                             inputmode="tel"
                             autocomplete="tel"
                             dir="ltr"
-                            placeholder="+966 5x xxx xxxx"
+                            placeholder="5x xxx xxxx"
                             @focus="focused = 'phone'"
                             @blur="focused = ''"
                           />
@@ -177,7 +189,7 @@
                       </span>
                     </label>
 
-                    <button class="submit" type="submit" :disabled="loading">
+                    <button class="submit" type="submit" :disabled="!canSubmit">
                       <span class="shine"></span>
                       <span v-if="!loading">{{ submitLabel }}</span>
                       <span v-else class="spinner"></span>
@@ -196,6 +208,45 @@
           </div>
         </div>
       </div>
+
+      <!-- ─────────────  nationality picker (bottom sheet)  ───────────── -->
+      <Teleport to="body">
+        <transition name="sheet">
+          <div v-if="pickerOpen" class="picker-overlay" :dir="dir" @click.self="closePicker">
+            <div class="picker">
+              <span class="picker-grip"></span>
+              <div class="picker-search">
+                <ion-icon :icon="searchOutline" />
+                <input v-model="countrySearch" :placeholder="t('auth.searchCountry')" />
+                <button type="button" class="picker-close" aria-label="close" @click="closePicker">
+                  <ion-icon :icon="closeOutline" />
+                </button>
+              </div>
+              <div class="picker-list">
+                <button
+                  v-for="c in filteredCountries"
+                  :key="c.code"
+                  type="button"
+                  class="picker-item"
+                  :class="{ on: selectedCountry && selectedCountry.code === c.code }"
+                  @click="selectCountry(c)"
+                >
+                  <img
+                    class="flag-img"
+                    :src="flagUrl(c.code)"
+                    :srcset="`${flagUrl(c.code, 80)} 2x`"
+                    loading="lazy"
+                    alt=""
+                  />
+                  <span class="ci-name">{{ countryName(c) }}</span>
+                  <span class="ci-dial" dir="ltr">{{ c.dial }}</span>
+                </button>
+                <p v-if="!filteredCountries.length" class="picker-empty">{{ t("auth.noResults") }}</p>
+              </div>
+            </div>
+          </div>
+        </transition>
+      </Teleport>
     </ion-content>
   </ion-page>
 </template>
@@ -210,9 +261,13 @@ import {
   alertCircleOutline,
   chevronBackOutline,
   chevronForwardOutline,
+  chevronDownOutline,
+  searchOutline,
+  closeOutline,
 } from "ionicons/icons";
 import { t, dir, locale, setLocale, LANGUAGES } from "@/i18n";
 import { signIn, signUp, sendPasswordReset } from "@/stores/auth";
+import { COUNTRIES } from "@/data/countries";
 
 const ionRouter = useIonRouter();
 const route = useRoute();
@@ -239,6 +294,37 @@ const shake = ref(false);
 const SHORT = { ar: "ع", en: "EN", uk: "UK" };
 const short = (code) => SHORT[code] || code.toUpperCase();
 
+/* ── nationality picker ── */
+const pickerOpen = ref(false);
+const countrySearch = ref("");
+const selectedCountry = ref(null);
+const countryName = (c) => (locale.value === "ar" ? c.ar : c.en);
+const flagUrl = (code, w = 40) => `https://flagcdn.com/w${w}/${code.toLowerCase()}.png`;
+const filteredCountries = computed(() => {
+  const q = countrySearch.value.trim().toLowerCase();
+  if (!q) return COUNTRIES;
+  return COUNTRIES.filter(
+    (c) =>
+      c.ar.includes(q) ||
+      c.en.toLowerCase().includes(q) ||
+      c.dial.includes(q) ||
+      c.code.toLowerCase().includes(q)
+  );
+});
+function openPicker() {
+  countrySearch.value = "";
+  pickerOpen.value = true;
+}
+function closePicker() {
+  pickerOpen.value = false;
+}
+function selectCountry(c) {
+  selectedCountry.value = c;
+  nationality.value = c.ar; // stored for the profile
+  phone.value = `${c.dial} `; // auto-fill the phone prefix
+  closePicker();
+}
+
 const headTitle = computed(() => {
   if (mode.value === "signup") return t("auth.signupSubtitle");
   if (mode.value === "forgot") return t("auth.forgotTitle");
@@ -248,6 +334,22 @@ const submitLabel = computed(() => {
   if (mode.value === "signup") return t("auth.signupBtn");
   if (mode.value === "forgot") return t("auth.sendReset");
   return t("auth.loginBtn");
+});
+
+// Required fields per mode — the submit button stays disabled until they're set.
+const canSubmit = computed(() => {
+  if (loading.value) return false;
+  if (mode.value === "forgot") return !!email.value.trim();
+  if (mode.value === "login") return !!email.value.trim() && !!password.value;
+  // signup — every field is required
+  return (
+    !!name.value.trim() &&
+    !!selectedCountry.value &&
+    !!phone.value.trim() &&
+    !!email.value.trim() &&
+    !!password.value &&
+    accepted.value
+  );
 });
 
 const canBack = ref(false);
@@ -269,6 +371,7 @@ function setMode(m) {
   notice.value = "";
   focused.value = "";
   showPw.value = false;
+  pickerOpen.value = false;
 }
 
 const emailOk = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
@@ -324,8 +427,10 @@ async function doSignup() {
     });
     if (needsConfirmation) notice.value = t("auth.signupDone");
     else ionRouter.push("/tabs/home", "root", "replace");
-  } catch {
-    fail(t("auth.errGeneric"));
+  } catch (e) {
+    // Surface the real Supabase message while we debug.
+    console.error("signup error:", e);
+    fail(e?.message || t("auth.errGeneric"));
   }
 }
 
@@ -592,6 +697,120 @@ async function doForgot() {
 }
 .eye:active { background: #ebeef1; }
 
+/* nationality select button */
+.control.select {
+  width: 100%;
+  gap: 9px;
+  cursor: pointer;
+  text-align: start;
+  font-family: "Cairo", sans-serif;
+}
+.control.select:active { background: #eef1f4; }
+.flag-img {
+  width: 26px;
+  height: 19px;
+  flex: 0 0 auto;
+  border-radius: 3px;
+  object-fit: cover;
+  background: #eef1f4;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+.sel-name { flex: 1 1 auto; min-width: 0; color: #14121f; font-size: 0.95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sel-dial { flex: 0 0 auto; color: #8a8a99; font-size: 0.85rem; font-weight: 700; }
+.sel-ph { flex: 1 1 auto; color: #aab2b9; font-size: 0.95rem; }
+.chev { flex: 0 0 auto; color: #9aa0ad; font-size: 1.05rem; margin-inline-start: 2px; }
+
+/* ── country picker bottom sheet ── */
+.picker-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  background: rgba(13, 30, 28, 0.45);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+  font-family: "Cairo", sans-serif;
+}
+.picker {
+  display: flex;
+  flex-direction: column;
+  min-height: 62vh;
+  max-height: 80vh;
+  background: #fff;
+  border-top-left-radius: 22px;
+  border-top-right-radius: 22px;
+  padding: 8px 0 calc(env(safe-area-inset-bottom) + 8px);
+  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.22);
+}
+.picker-grip {
+  width: 42px; height: 5px;
+  border-radius: 999px;
+  background: #e2e5ea;
+  margin: 4px auto 12px;
+}
+.picker-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 16px 10px;
+  padding: 0 12px;
+  height: 46px;
+  border-radius: 12px;
+  background: #f5f6f8;
+}
+.picker-search ion-icon { color: #9aa0ad; font-size: 1.2rem; flex: 0 0 auto; }
+.picker-search input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-family: "Cairo", sans-serif;
+  font-size: 0.95rem;
+  color: #14121f;
+}
+.picker-close {
+  flex: 0 0 auto;
+  width: 30px; height: 30px;
+  display: grid; place-items: center;
+  border: none; background: transparent;
+  color: #9aa0ad; font-size: 1.2rem; cursor: pointer;
+}
+.picker-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 8px;
+}
+.picker-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  border: none;
+  background: transparent;
+  border-radius: 12px;
+  text-align: start;
+  cursor: pointer;
+  font-family: "Cairo", sans-serif;
+}
+.picker-item:active { background: #f3f4f6; }
+.picker-item.on { background: #ecfdf6; }
+.picker-item .flag-img { width: 30px; height: 22px; }
+.ci-name { flex: 1 1 auto; min-width: 0; color: #14121f; font-size: 0.95rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ci-dial { flex: 0 0 auto; color: #8a8a99; font-size: 0.88rem; font-weight: 700; }
+.picker-empty { text-align: center; color: #8a8a99; padding: 24px; font-size: 0.9rem; }
+
+/* sheet transition */
+.sheet-enter-active, .sheet-leave-active { transition: opacity 0.25s ease; }
+.sheet-enter-active .picker, .sheet-leave-active .picker { transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1); }
+.sheet-enter-from, .sheet-leave-to { opacity: 0; }
+.sheet-enter-from .picker, .sheet-leave-to .picker { transform: translateY(100%); }
+
 /* forgot link row */
 .forgot-row { text-align: end; margin: 0 2px 18px; }
 .back-row { text-align: center; margin-top: 20px; }
@@ -637,7 +856,9 @@ async function doForgot() {
   transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
 }
 .submit:active { transform: translateY(1px) scale(0.99); box-shadow: 0 9px 20px rgba(13, 148, 136, 0.3); }
-.submit:disabled { opacity: 0.92; cursor: default; }
+.submit:disabled { opacity: 0.5; cursor: default; box-shadow: none; }
+.submit:disabled:active { transform: none; }
+.submit:disabled .shine { display: none; }
 .submit span { position: relative; z-index: 1; }
 .shine {
   position: absolute;

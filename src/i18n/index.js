@@ -138,6 +138,9 @@ const messages = {
       resetSent: "إذا كان البريد مسجّلًا، فستصلك رسالة لإعادة تعيين كلمة المرور.",
       or: "أو",
       socialFailed: "تعذّر تسجيل الدخول عبر هذه الخدمة.",
+      selectNationality: "اختر الجنسية",
+      searchCountry: "ابحث عن دولة",
+      noResults: "لا توجد نتائج",
     },
   },
 
@@ -265,6 +268,9 @@ const messages = {
       resetSent: "If that email is registered, a reset link is on its way.",
       or: "or",
       socialFailed: "Couldn't sign in with that provider.",
+      selectNationality: "Select nationality",
+      searchCountry: "Search for a country",
+      noResults: "No results",
     },
   },
 
@@ -392,6 +398,9 @@ const messages = {
       resetSent: "Якщо ця адреса зареєстрована, лист для скидання вже надіслано.",
       or: "або",
       socialFailed: "Не вдалося увійти через цей сервіс.",
+      selectNationality: "Оберіть країну",
+      searchCountry: "Пошук країни",
+      noResults: "Нічого не знайдено",
     },
   },
 };
