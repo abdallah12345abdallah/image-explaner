@@ -17,9 +17,12 @@
         </div>
         <div class="navbar">
           <h1 class="brand-name">{{ t("brand") }}</h1>
+          <button class="logout-icon" :aria-label="t('auth.logout')" @click="confirmLogout">
+            <ion-icon :icon="logOutOutline" />
+          </button>
         </div>
         <div class="welcome">
-          <p class="w-hi">{{ t("home.welcome") }} <span class="wave">👋</span></p>
+          <p class="w-hi">{{ hello }} <span class="wave">👋</span></p>
           <p class="w-sub">
             <span>{{ t("home.weExplain") }}</span>
             <transition name="rotate" mode="out-in">
@@ -98,12 +101,25 @@ import {
   chevronForwardOutline,
   arrowBackOutline,
   arrowForwardOutline,
+  logOutOutline,
 } from "ionicons/icons";
 import { ref, computed, onMounted, onBeforeUnmount } from "vue";
-import { t, dir } from "@/i18n";
+import { t, dir, locale } from "@/i18n";
+import { authStore } from "@/stores/auth";
+import { firstName as toFirstName } from "@/services/user";
+import { useLogout } from "@/composables/useLogout";
 
 const ionRouter = useIonRouter();
 const go = (path) => ionRouter.push(path, "forward");
+
+const { confirmLogout } = useLogout();
+
+// Greeting with the user's first name (falls back to a plain welcome).
+const hello = computed(() => {
+  const n = toFirstName(authStore.profile?.name, authStore.user?.email);
+  if (!n) return t("home.welcome");
+  return locale.value === "ar" ? `${t("home.welcome")}، ${n}` : `${t("home.welcome")}, ${n}`;
+});
 
 // "go forward" arrows point left in RTL, right in LTR
 const goIcon = computed(() =>
@@ -178,6 +194,22 @@ onBeforeUnmount(() => clearInterval(rotTimer));
 .c1 { width: 180px; height: 180px; top: -70px; inset-inline-start: -50px; }
 .c2 { width: 120px; height: 120px; bottom: -50px; inset-inline-end: -24px; }
 .navbar { position: relative; z-index: 1; display: flex; justify-content: center; padding-bottom: 10px; }
+.logout-icon {
+  position: absolute;
+  inset-inline-end: 0;
+  top: 0; bottom: 10px;
+  margin-block: auto;
+  width: 38px; height: 38px;
+  display: grid; place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: background 0.16s ease, transform 0.16s ease;
+}
+.logout-icon:active { background: rgba(255, 255, 255, 0.3); transform: scale(0.92); }
 .brand-name {
   margin: 0;
   font-family: "Gulzar", "Aref Ruqaa", serif;

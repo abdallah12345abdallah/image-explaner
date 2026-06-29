@@ -140,7 +140,6 @@ import {
   IonPage,
   IonContent,
   IonIcon,
-  toastController,
   useIonRouter,
 } from "@ionic/vue";
 import {
@@ -153,6 +152,7 @@ import { ref } from "vue";
 import AppNavbar from "@/components/AppNavbar.vue";
 import { t, dir, localeTag } from "@/i18n";
 import { useCapture } from "@/composables/useCapture";
+import { useToast } from "@/composables/useToast";
 import { explainImage } from "@/services/explain";
 import { setResult } from "@/stores/result";
 import { addHistory } from "@/stores/history";
@@ -164,15 +164,7 @@ const captured = ref(null);
 const preview = ref(null);
 const loading = ref(false);
 
-async function showError(message) {
-  const toast = await toastController.create({
-    message,
-    duration: 3000,
-    color: "danger",
-    position: "top",
-  });
-  await toast.present();
-}
+const { showError } = useToast();
 
 async function handleCapture(fn) {
   try {

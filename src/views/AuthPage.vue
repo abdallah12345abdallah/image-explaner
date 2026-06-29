@@ -267,7 +267,10 @@ import {
 } from "ionicons/icons";
 import { t, dir, locale, setLocale, LANGUAGES } from "@/i18n";
 import { signIn, signUp, sendPasswordReset } from "@/stores/auth";
+import { useToast } from "@/composables/useToast";
 import { COUNTRIES } from "@/data/countries";
+
+const { showSuccess, showError } = useToast();
 
 const ionRouter = useIonRouter();
 const route = useRoute();
@@ -376,13 +379,20 @@ function setMode(m) {
 
 const emailOk = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 
-function fail(msg) {
-  error.value = msg;
+// Tactile feedback — re-trigger the CSS shake animation on the form.
+function triggerShake() {
   shake.value = false;
   requestAnimationFrame(() => {
     shake.value = true;
     setTimeout(() => (shake.value = false), 500);
   });
+}
+
+// Inline validation error (shown in-form + shake) — for client-side input
+// problems the user can fix right there.
+function fail(msg) {
+  error.value = msg;
+  triggerShake();
 }
 
 async function submit() {
@@ -401,13 +411,15 @@ async function doLogin() {
   if (!email.value.trim() || !password.value) return fail(t("auth.errRequired"));
   try {
     await signIn(email.value, password.value);
+    showSuccess(t("auth.toastWelcomeDesc"), t("auth.toastWelcomeTitle"));
     ionRouter.push("/tabs/home", "root", "replace");
   } catch (e) {
-    fail(
+    const msg =
       e?.status === 400 || /invalid login/i.test(e?.message || "")
         ? t("auth.errCredentials")
-        : t("auth.errGeneric")
-    );
+        : t("auth.errGeneric");
+    showError(msg, t("auth.toastErrorTitle"));
+    triggerShake();
   }
 }
 
@@ -425,12 +437,18 @@ async function doSignup() {
       password: password.value,
       acceptedPrivacy: accepted.value,
     });
-    if (needsConfirmation) notice.value = t("auth.signupDone");
-    else ionRouter.push("/tabs/home", "root", "replace");
+    if (needsConfirmation) {
+      notice.value = t("auth.signupDone");
+      showSuccess(t("auth.signupDone"), t("auth.toastSignupTitle"));
+    } else {
+      showSuccess(t("auth.toastSignupDesc"), t("auth.toastSignupTitle"));
+      ionRouter.push("/tabs/home", "root", "replace");
+    }
   } catch (e) {
     // Surface the real Supabase message while we debug.
     console.error("signup error:", e);
-    fail(e?.message || t("auth.errGeneric"));
+    showError(e?.message || t("auth.errGeneric"), t("auth.toastErrorTitle"));
+    triggerShake();
   }
 }
 
@@ -442,6 +460,7 @@ async function doForgot() {
     /* don't reveal whether the email exists */
   }
   notice.value = t("auth.resetSent");
+  showSuccess(t("auth.resetSent"), t("auth.toastResetTitle"));
 }
 </script>
 

@@ -38,6 +38,12 @@ import '@ionic/vue/css/display.css';
 /* Theme variables */
 import './theme/variables.css';
 
+/* Modern toast styling (used by src/composables/useToast.js) */
+import './theme/toast.css';
+
+/* Confirmation dialog styling (used by src/composables/useLogout.js) */
+import './theme/dialog.css';
+
 /* App data + reminders bootstrap */
 import { loadLocale } from './i18n';
 import { initAuth } from './stores/auth';

@@ -83,7 +83,6 @@ import {
   IonPage,
   IonContent,
   IonIcon,
-  toastController,
 } from "@ionic/vue";
 import {
   addOutline,
@@ -103,8 +102,11 @@ import {
 import { formatArabicDateTime } from "@/services/datetime";
 import { t, dir, leadLabel } from "@/i18n";
 import { hasPermission } from "@/services/notifications";
+import { useToast } from "@/composables/useToast";
 import SaveAppointmentModal from "@/components/SaveAppointmentModal.vue";
 import AppointmentDetailModal from "@/components/AppointmentDetailModal.vue";
+
+const { showSuccess, showWarning, showInfo } = useToast();
 import AppNavbar from "@/components/AppNavbar.vue";
 
 const fmt = (iso) => formatArabicDateTime(iso);
@@ -144,24 +146,13 @@ async function onSave(payload) {
 
 async function notifyResult() {
   const granted = await hasPermission();
-  const msg = granted ? t("appts.saved") : t("appts.savedNoPerm");
-  const toast = await toastController.create({
-    message: msg,
-    duration: 2600,
-    color: granted ? "success" : "warning",
-    position: "top",
-  });
-  await toast.present();
+  if (granted) showSuccess(t("appts.saved"));
+  else showWarning(t("appts.savedNoPerm"));
 }
 
 async function onDelete(a) {
   await removeAppointment(a.id);
-  const toast = await toastController.create({
-    message: t("appts.deleted"),
-    duration: 1800,
-    position: "top",
-  });
-  await toast.present();
+  showInfo(t("appts.deleted"));
 }
 </script>
 

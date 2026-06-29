@@ -1,0 +1,57 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   Confirmation dialog styling (ion-alert with cssClass "confirm-alert").
+   ion-alert uses scoped (non-shadow) encapsulation, so its internal classes
+   are reachable with plain global selectors.
+   ───────────────────────────────────────────────────────────────────────── */
+.confirm-alert .alert-wrapper {
+  border-radius: 22px;
+  padding: 6px 4px 4px;
+  font-family: "Cairo", sans-serif;
+  box-shadow: 0 22px 54px rgba(13, 70, 65, 0.28);
+  --max-width: 340px;
+}
+
+.confirm-alert .alert-head {
+  padding-top: 22px;
+  text-align: center;
+}
+.confirm-alert .alert-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #14121f;
+  letter-spacing: -0.01em;
+}
+.confirm-alert .alert-message {
+  text-align: center;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #5b5b6b;
+  padding-top: 6px;
+}
+
+.confirm-alert .alert-button-group {
+  display: flex;
+  gap: 9px;
+  padding: 10px 16px 16px;
+}
+.confirm-alert .alert-button {
+  flex: 1;
+  margin: 0;
+  border-radius: 13px;
+  min-height: 46px;
+  font-family: "Cairo", sans-serif;
+  font-weight: 700;
+  font-size: 0.92rem;
+  text-transform: none;
+}
+.confirm-alert .alert-button .alert-button-inner {
+  justify-content: center;
+}
+.confirm-alert .confirm-btn-cancel {
+  background: #f1f1f6;
+  color: #43414f;
+}
+.confirm-alert .confirm-btn-danger {
+  background: #fef2f2;
+  color: #dc2626;
+}

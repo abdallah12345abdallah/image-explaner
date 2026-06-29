@@ -88,7 +88,6 @@ import {
   IonContent,
   IonIcon,
   useIonRouter,
-  toastController,
 } from "@ionic/vue";
 import {
   calendarOutline,
@@ -109,8 +108,10 @@ import { t, dir } from "@/i18n";
 import { resultStore } from "@/stores/result";
 import { addAppointment } from "@/stores/appointments";
 import { hasPermission } from "@/services/notifications";
+import { useToast } from "@/composables/useToast";
 import SaveAppointmentModal from "@/components/SaveAppointmentModal.vue";
 
+const { showSuccess, showWarning } = useToast();
 const ionRouter = useIonRouter();
 // back chevron: right in RTL, left in LTR
 const backIcon = computed(() =>
@@ -149,13 +150,8 @@ function openSave() {
 async function onSave(payload) {
   await addAppointment(payload);
   const granted = await hasPermission();
-  const toast = await toastController.create({
-    message: granted ? t("appts.saved") : t("appts.savedNoPerm"),
-    duration: 2600,
-    color: granted ? "success" : "warning",
-    position: "top",
-  });
-  await toast.present();
+  if (granted) showSuccess(t("appts.saved"));
+  else showWarning(t("appts.savedNoPerm"));
 }
 
 const details = computed(() => {
