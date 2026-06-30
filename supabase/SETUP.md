@@ -50,8 +50,28 @@ just need to create a free Supabase project and paste two keys.
 - Router guard: no app access until logged in
 - Logout button in Settings
 
-## Phase 2 (not done yet) — data sync
-The reminders & history still live only on the phone. Next step is to rewrite
-`src/stores/appointments.js` and `src/stores/history.js` to read/write the
-Supabase `appointments` / `history` tables (the tables already exist). Say the
-word and I'll do it.
+## Phase 2 — data sync (DONE — all user data follows the account)
+
+All user data lives on the server, tied to the account. Signing out clears the
+device so the next user starts clean.
+
+- **Reminders / appointments** — `src/stores/appointments.js` ↔ `appointments`
+  table. **Offline-first**: a local copy keeps reminders working and firing with
+  no connection, and offline changes sync up on the next launch/login. (OS
+  notifications stay on-device — that's inherent to how they fire.)
+- **History** — `src/stores/history.js` ↔ `history` table, with each thumbnail
+  stored as a file in the **private `history-thumbnails` Storage bucket**
+  (path `<user_id>/<image_id>.jpg`) and shown via short-lived signed URLs, so
+  the database stays small. Capped at 50 most-recent per user. **Server-only —
+  no device cache**: the History page fetches from the server each time it opens
+  (a skeleton shows while loading). This is safe because creating a history
+  entry already requires a network call (the image analysis).
+- **Settings** (default reminder lead time) — `src/stores/settings.js` ↔ the
+  `default_lead_minutes` column on the user's `profiles` row.
+
+### ⚠️ Re-run the schema
+This phase added a `profiles` column, the `history-thumbnails` bucket, and its
+storage policies. **Re-run [`schema.sql`](./schema.sql)** (SQL Editor → paste →
+Run) on the existing project — every statement is idempotent (`if not exists` /
+`on conflict do nothing` / `drop policy … create policy`), so it's safe to run
+again and won't touch existing rows.

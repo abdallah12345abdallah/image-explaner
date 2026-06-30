@@ -16,7 +16,7 @@ export const LANGUAGES = [
 const messages = {
   ar: {
     brand: "وضوح",
-    common: { back: "رجوع", save: "حفظ", delete: "حذف", edit: "تعديل" },
+    common: { back: "رجوع", save: "حفظ", delete: "حذف", edit: "تعديل", syncing: "جارٍ المزامنة…", saving: "جارٍ الحفظ…", saved: "تم الحفظ" },
     toast: { success: "تم", error: "حدث خطأ", warning: "تنبيه", info: "ملاحظة" },
     home: {
       welcome: "أهلاً بك",
@@ -58,7 +58,7 @@ const messages = {
       saved: "تم حفظ الموعد وضبط التذكير ✅",
       savedNoPerm: "تم حفظ الموعد. فعّل إذن الإشعارات ليصلك التذكير.",
     },
-    history: { title: "سجل المستندات", empty: "لا مستندات في السجل بعد.", document: "مستند" },
+    history: { title: "سجل المستندات", empty: "لا مستندات في السجل بعد.", document: "مستند", detailTitle: "تفاصيل المستند", analyzedOn: "تاريخ التحليل", saveFailed: "تعذّر حفظ التحليل في السجل. تحقّق من اتصالك." },
     settings: {
       title: "الإعدادات",
       reminders: "التذكيرات",
@@ -73,6 +73,30 @@ const messages = {
       language: "اللغة",
       about: "عن التطبيق",
       aboutDesc: "يشرح مستنداتك ويذكّرك بمواعيدك.",
+      accountInfo: "بيانات الحساب",
+      memberSince: "عضو منذ",
+      saveChanges: "حفظ التغييرات",
+      savedToast: "تم حفظ الإعدادات",
+      manageAccount: "إدارة الحساب",
+    },
+    account: {
+      title: "إدارة الحساب",
+      profileSection: "المعلومات الشخصية",
+      passwordSection: "كلمة المرور",
+      dangerSection: "منطقة الخطر",
+      saveProfile: "حفظ المعلومات",
+      profileSaved: "تم تحديث معلوماتك",
+      newPassword: "كلمة المرور الجديدة",
+      confirmPassword: "تأكيد كلمة المرور",
+      changePassword: "تغيير كلمة المرور",
+      passwordChanged: "تم تغيير كلمة المرور",
+      errPasswordMatch: "كلمتا المرور غير متطابقتين.",
+      deleteAccount: "حذف الحساب",
+      deleteWarning: "سيؤدي حذف حسابك إلى مسح جميع بياناتك (المواعيد، السجل، الإعدادات) نهائيًا. لا يمكن التراجع عن هذا الإجراء.",
+      deleteConfirmTitle: "حذف الحساب نهائيًا؟",
+      deleteConfirmMsg: "سيتم مسح كل بياناتك ولا يمكن استرجاعها. هل أنت متأكد؟",
+      deleteConfirmBtn: "نعم، احذف حسابي",
+      deleted: "تم حذف حسابك.",
     },
     result: {
       noResult: "لا توجد نتيجة بعد.",
@@ -97,12 +121,14 @@ const messages = {
       locationLabel: "المكان (اختياري)",
       locationPlaceholder: "مثال: مبنى ب",
       remindBefore: "ذكّرني قبل الموعد بـ",
+      repeat: "التكرار",
       save: "حفظ",
       defaultTitle: "موعد",
     },
+    recur: { none: "بدون", daily: "يوميًا", weekly: "أسبوعيًا", monthly: "شهريًا" },
     leads: { m10: "١٠ دقائق", m30: "٣٠ دقيقة", h1: "ساعة", d1: "يوم" },
     langNames: { ar: "العربية", en: "الإنجليزية", uk: "الأوكرانية" },
-    notif: { title: "تذكير بموعد" },
+    notif: { title: "تذكير بموعد", snooze10: "تأجيل ١٠ د", snooze60: "تأجيل ساعة" },
     auth: {
       loginTitle: "تسجيل الدخول",
       loginSubtitle: "أهلاً بعودتك",
@@ -154,11 +180,62 @@ const messages = {
       searchCountry: "ابحث عن دولة",
       noResults: "لا توجد نتائج",
     },
+    privacy: {
+      updated: "آخر تحديث: ٣٠ يونيو ٢٠٢٦",
+      intro:
+        "تشرح سياسة الخصوصية هذه كيف يجمع تطبيق «وضوح» معلوماتك ويستخدمها ويحميها عند استخدامك للتطبيق.",
+      sections: [
+        {
+          h: "المعلومات التي نجمعها",
+          b: "• معلومات الحساب: الاسم والبريد الإلكتروني والجنسية ورقم الهاتف التي تُدخلها عند إنشاء الحساب.\n• الصور التي تلتقطها أو ترفعها لتحليلها.\n• المواعيد والتذكيرات التي تنشئها.\n• سجل تحليلاتك السابقة.",
+        },
+        {
+          h: "كيف نستخدم معلوماتك",
+          b: "نستخدم معلوماتك لتقديم خدمة تحليل المستندات وشرحها، وإدارة حسابك، وإرسال تذكيرات مواعيدك، وحفظ سجلك ومزامنته بين أجهزتك.",
+        },
+        {
+          h: "معالجة الصور والذكاء الاصطناعي",
+          b: "تُرسَل الصور التي تختار تحليلها إلى خدمة ذكاء اصطناعي لمعالجتها وإرجاع الشرح إليك. تُعالَج صورك فقط لهذا الغرض ولا تُستخدم لتدريب النماذج.",
+        },
+        {
+          h: "التخزين والأمان",
+          b: "تُخزَّن بياناتك على خوادم آمنة مع تطبيق صلاحيات على مستوى الصفوف بحيث لا يصل إلى بياناتك أحد سواك. وتُحفظ الصور المصغّرة في مساحة تخزين خاصة.",
+        },
+        {
+          h: "مشاركة البيانات",
+          b: "لا نبيع بياناتك. نشاركها فقط مع مزوّدي الخدمات الضروريين لتشغيل التطبيق (مثل مزوّد الاستضافة وخدمة الذكاء الاصطناعي) ووفق هذه السياسة.",
+        },
+        {
+          h: "الإشعارات",
+          b: "تُجدوَل تذكيرات المواعيد محليًا على جهازك. يمكنك تعطيل الإشعارات من إعدادات هاتفك في أي وقت.",
+        },
+        {
+          h: "الاحتفاظ بالبيانات",
+          b: "نحتفظ ببياناتك ما دام حسابك نشطًا. وعند حذف أي عنصر أو حذف حسابك تُمحى البيانات المرتبطة به نهائيًا من خوادمنا.",
+        },
+        {
+          h: "حقوقك",
+          b: "يمكنك الوصول إلى بياناتك وتعديلها من داخل التطبيق، وتغيير كلمة المرور، وحذف حسابك وجميع بياناتك في أي وقت من شاشة «إدارة الحساب».",
+        },
+        {
+          h: "خصوصية الأطفال",
+          b: "التطبيق غير موجَّه للأطفال دون سن 13 عامًا، ولا نجمع بياناتهم عن قصد.",
+        },
+        {
+          h: "تغييرات على هذه السياسة",
+          b: "قد نُحدّث هذه السياسة من حين لآخر، وسننشر أي تغييرات على هذه الصفحة مع تحديث تاريخ آخر تعديل.",
+        },
+        {
+          h: "تواصل معنا",
+          b: "لأي استفسار يخص الخصوصية، تواصل معنا عبر: [البريد الإلكتروني للدعم]",
+        },
+      ],
+    },
   },
 
   en: {
     brand: "Wuduh",
-    common: { back: "Back", save: "Save", delete: "Delete", edit: "Edit" },
+    common: { back: "Back", save: "Save", delete: "Delete", edit: "Edit", syncing: "Syncing…", saving: "Saving…", saved: "Saved" },
     toast: { success: "Done", error: "Error", warning: "Heads up", info: "Notice" },
     home: {
       welcome: "Welcome",
@@ -200,7 +277,7 @@ const messages = {
       saved: "Appointment saved and reminder set ✅",
       savedNoPerm: "Appointment saved. Enable notifications to get the reminder.",
     },
-    history: { title: "Document history", empty: "No documents in history yet.", document: "Document" },
+    history: { title: "Document history", empty: "No documents in history yet.", document: "Document", detailTitle: "Document details", analyzedOn: "Analyzed on", saveFailed: "Couldn't save the analysis to history. Check your connection." },
     settings: {
       title: "Settings",
       reminders: "Reminders",
@@ -215,6 +292,30 @@ const messages = {
       language: "Language",
       about: "About",
       aboutDesc: "Explains your documents and reminds you of appointments.",
+      accountInfo: "Account details",
+      memberSince: "Member since",
+      saveChanges: "Save changes",
+      savedToast: "Settings saved",
+      manageAccount: "Manage account",
+    },
+    account: {
+      title: "Manage account",
+      profileSection: "Personal information",
+      passwordSection: "Password",
+      dangerSection: "Danger zone",
+      saveProfile: "Save information",
+      profileSaved: "Your information was updated",
+      newPassword: "New password",
+      confirmPassword: "Confirm password",
+      changePassword: "Change password",
+      passwordChanged: "Password changed",
+      errPasswordMatch: "Passwords don't match.",
+      deleteAccount: "Delete account",
+      deleteWarning: "Deleting your account permanently erases all your data (appointments, history, settings). This cannot be undone.",
+      deleteConfirmTitle: "Delete account permanently?",
+      deleteConfirmMsg: "All your data will be erased and cannot be recovered. Are you sure?",
+      deleteConfirmBtn: "Yes, delete my account",
+      deleted: "Your account was deleted.",
     },
     result: {
       noResult: "No result yet.",
@@ -239,12 +340,14 @@ const messages = {
       locationLabel: "Location (optional)",
       locationPlaceholder: "e.g. Building B",
       remindBefore: "Remind me before",
+      repeat: "Repeat",
       save: "Save",
       defaultTitle: "Appointment",
     },
+    recur: { none: "None", daily: "Daily", weekly: "Weekly", monthly: "Monthly" },
     leads: { m10: "10 minutes", m30: "30 minutes", h1: "1 hour", d1: "1 day" },
     langNames: { ar: "Arabic", en: "English", uk: "Ukrainian" },
-    notif: { title: "Appointment reminder" },
+    notif: { title: "Appointment reminder", snooze10: "Snooze 10 min", snooze60: "Snooze 1 hour" },
     auth: {
       loginTitle: "Log in",
       loginSubtitle: "Welcome back",
@@ -296,11 +399,62 @@ const messages = {
       searchCountry: "Search for a country",
       noResults: "No results",
     },
+    privacy: {
+      updated: "Last updated: 30 June 2026",
+      intro:
+        "This Privacy Policy explains how the Wuduh app collects, uses, and protects your information when you use the app.",
+      sections: [
+        {
+          h: "Information we collect",
+          b: "• Account information: the name, email, nationality, and phone number you enter when creating an account.\n• Images you capture or upload for analysis.\n• Appointments and reminders you create.\n• Your history of past analyses.",
+        },
+        {
+          h: "How we use your information",
+          b: "We use your information to provide the document analysis and explanation service, manage your account, send your appointment reminders, and store and sync your history across your devices.",
+        },
+        {
+          h: "Image processing & AI",
+          b: "Images you choose to analyze are sent to an AI service to be processed and have the explanation returned to you. Your images are processed only for this purpose and are not used to train models.",
+        },
+        {
+          h: "Storage & security",
+          b: "Your data is stored on secure servers with row-level security, so no one but you can access it. Thumbnails are kept in private storage.",
+        },
+        {
+          h: "Data sharing",
+          b: "We do not sell your data. We share it only with the service providers necessary to run the app (such as the hosting provider and the AI service) and as described in this policy.",
+        },
+        {
+          h: "Notifications",
+          b: "Appointment reminders are scheduled locally on your device. You can disable notifications from your phone settings at any time.",
+        },
+        {
+          h: "Data retention",
+          b: "We keep your data for as long as your account is active. When you delete an item or your account, the associated data is permanently erased from our servers.",
+        },
+        {
+          h: "Your rights",
+          b: "You can access and edit your data from within the app, change your password, and delete your account and all your data at any time from the Manage account screen.",
+        },
+        {
+          h: "Children's privacy",
+          b: "The app is not directed to children under 13, and we do not knowingly collect their data.",
+        },
+        {
+          h: "Changes to this policy",
+          b: "We may update this policy from time to time. Any changes will be posted on this page with an updated revision date.",
+        },
+        {
+          h: "Contact us",
+          b: "For any privacy questions, contact us at: [support email]",
+        },
+      ],
+    },
   },
 
   uk: {
     brand: "Wuduh",
-    common: { back: "Назад", save: "Зберегти", delete: "Видалити", edit: "Редагувати" },
+    common: { back: "Назад", save: "Зберегти", delete: "Видалити", edit: "Редагувати", syncing: "Синхронізація…", saving: "Збереження…", saved: "Збережено" },
     toast: { success: "Готово", error: "Помилка", warning: "Увага", info: "Сповіщення" },
     home: {
       welcome: "Ласкаво просимо",
@@ -342,7 +496,7 @@ const messages = {
       saved: "Запис збережено, нагадування встановлено ✅",
       savedNoPerm: "Запис збережено. Увімкніть сповіщення, щоб отримати нагадування.",
     },
-    history: { title: "Історія документів", empty: "Поки що немає документів в історії.", document: "Документ" },
+    history: { title: "Історія документів", empty: "Поки що немає документів в історії.", document: "Документ", detailTitle: "Деталі документа", analyzedOn: "Дата аналізу", saveFailed: "Не вдалося зберегти аналіз в історію. Перевірте з'єднання." },
     settings: {
       title: "Налаштування",
       reminders: "Нагадування",
@@ -357,6 +511,30 @@ const messages = {
       language: "Мова",
       about: "Про застосунок",
       aboutDesc: "Пояснює ваші документи та нагадує про записи.",
+      accountInfo: "Дані акаунта",
+      memberSince: "Учасник з",
+      saveChanges: "Зберегти зміни",
+      savedToast: "Налаштування збережено",
+      manageAccount: "Керування акаунтом",
+    },
+    account: {
+      title: "Керування акаунтом",
+      profileSection: "Особиста інформація",
+      passwordSection: "Пароль",
+      dangerSection: "Небезпечна зона",
+      saveProfile: "Зберегти інформацію",
+      profileSaved: "Вашу інформацію оновлено",
+      newPassword: "Новий пароль",
+      confirmPassword: "Підтвердьте пароль",
+      changePassword: "Змінити пароль",
+      passwordChanged: "Пароль змінено",
+      errPasswordMatch: "Паролі не збігаються.",
+      deleteAccount: "Видалити акаунт",
+      deleteWarning: "Видалення акаунта назавжди стирає всі ваші дані (записи, історію, налаштування). Це не можна скасувати.",
+      deleteConfirmTitle: "Видалити акаунт назавжди?",
+      deleteConfirmMsg: "Усі ваші дані буде стерто без можливості відновлення. Ви впевнені?",
+      deleteConfirmBtn: "Так, видалити мій акаунт",
+      deleted: "Ваш акаунт видалено.",
     },
     result: {
       noResult: "Поки що немає результату.",
@@ -381,12 +559,14 @@ const messages = {
       locationLabel: "Місце (необов'язково)",
       locationPlaceholder: "напр. Корпус Б",
       remindBefore: "Нагадати за",
+      repeat: "Повторення",
       save: "Зберегти",
       defaultTitle: "Запис",
     },
+    recur: { none: "Без", daily: "Щодня", weekly: "Щотижня", monthly: "Щомісяця" },
     leads: { m10: "10 хвилин", m30: "30 хвилин", h1: "1 година", d1: "1 день" },
     langNames: { ar: "Арабська", en: "Англійська", uk: "Українська" },
-    notif: { title: "Нагадування про запис" },
+    notif: { title: "Нагадування про запис", snooze10: "Відкласти 10 хв", snooze60: "Відкласти 1 год" },
     auth: {
       loginTitle: "Вхід",
       loginSubtitle: "З поверненням",
@@ -437,6 +617,57 @@ const messages = {
       selectNationality: "Оберіть країну",
       searchCountry: "Пошук країни",
       noResults: "Нічого не знайдено",
+    },
+    privacy: {
+      updated: "Останнє оновлення: 30 червня 2026",
+      intro:
+        "Ця Політика конфіденційності пояснює, як застосунок Wuduh збирає, використовує та захищає вашу інформацію під час користування застосунком.",
+      sections: [
+        {
+          h: "Яку інформацію ми збираємо",
+          b: "• Дані акаунта: ім'я, email, громадянство та номер телефону, які ви вводите під час реєстрації.\n• Зображення, які ви знімаєте чи завантажуєте для аналізу.\n• Записи та нагадування, які ви створюєте.\n• Історію ваших попередніх аналізів.",
+        },
+        {
+          h: "Як ми використовуємо вашу інформацію",
+          b: "Ми використовуємо вашу інформацію, щоб надавати послугу аналізу та пояснення документів, керувати вашим акаунтом, надсилати нагадування про записи, а також зберігати й синхронізувати вашу історію між пристроями.",
+        },
+        {
+          h: "Обробка зображень та ШІ",
+          b: "Зображення, які ви обираєте для аналізу, надсилаються до сервісу штучного інтелекту для обробки та повернення пояснення. Ваші зображення обробляються лише з цією метою і не використовуються для навчання моделей.",
+        },
+        {
+          h: "Зберігання та безпека",
+          b: "Ваші дані зберігаються на захищених серверах із захистом на рівні рядків, тож доступ до них маєте лише ви. Мініатюри зберігаються у приватному сховищі.",
+        },
+        {
+          h: "Передавання даних",
+          b: "Ми не продаємо ваші дані. Ми передаємо їх лише постачальникам послуг, необхідним для роботи застосунку (наприклад, хостинг та сервіс ШІ), і відповідно до цієї політики.",
+        },
+        {
+          h: "Сповіщення",
+          b: "Нагадування про записи плануються локально на вашому пристрої. Ви можете вимкнути сповіщення в налаштуваннях телефону будь-коли.",
+        },
+        {
+          h: "Зберігання даних",
+          b: "Ми зберігаємо ваші дані, доки ваш акаунт активний. Коли ви видаляєте елемент або акаунт, пов'язані дані остаточно стираються з наших серверів.",
+        },
+        {
+          h: "Ваші права",
+          b: "Ви можете переглядати й редагувати свої дані в застосунку, змінювати пароль та видаляти акаунт і всі дані будь-коли на екрані «Керування акаунтом».",
+        },
+        {
+          h: "Конфіденційність дітей",
+          b: "Застосунок не призначений для дітей до 13 років, і ми свідомо не збираємо їхні дані.",
+        },
+        {
+          h: "Зміни до цієї політики",
+          b: "Ми можемо час від часу оновлювати цю політику. Будь-які зміни буде опубліковано на цій сторінці з оновленою датою редакції.",
+        },
+        {
+          h: "Зв'язатися з нами",
+          b: "З будь-яких питань щодо конфіденційності пишіть нам: [email підтримки]",
+        },
+      ],
     },
   },
 };

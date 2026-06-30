@@ -9,6 +9,27 @@
 // a cold start.
 import { reactive } from "vue";
 import { supabase } from "@/services/supabase";
+import {
+  syncAppointments,
+  clearLocalAppointments,
+} from "@/stores/appointments";
+import { clearLocalHistory } from "@/stores/history";
+import { clearLocalSettings } from "@/stores/settings";
+
+// On login, sync reminders right away so cross-device reminders get scheduled
+// with the OS without waiting for the user to open the Reminders tab. History
+// and settings sync lazily when their own page is opened. Fire-and-forget.
+function syncUserData() {
+  syncAppointments().catch(() => {});
+}
+
+// Drop the previous user's cached data from this device on sign-out. The data
+// itself stays safe on the server.
+async function clearUserData() {
+  await clearLocalAppointments();
+  await clearLocalHistory();
+  await clearLocalSettings();
+}
 
 export const authStore = reactive({
   user: null,
@@ -24,17 +45,27 @@ export const authReady = new Promise((resolve) => {
 
 export const isLoggedIn = () => !!authStore.user;
 
+// The account id whose profile is currently loaded — lets us skip redundant
+// fetches when an auth event fires for the same user (initial-session replay,
+// token refresh, …).
+let loadedProfileUid = null;
+
 async function loadProfile() {
   if (!authStore.user) {
     authStore.profile = null;
+    loadedProfileUid = null;
     return;
   }
+  const uid = authStore.user.id;
   const { data, error } = await supabase
     .from("profiles")
     .select("*")
-    .eq("id", authStore.user.id)
+    .eq("id", uid)
     .single();
-  if (!error) authStore.profile = data;
+  if (!error) {
+    authStore.profile = data;
+    loadedProfileUid = uid;
+  }
 }
 
 /**
@@ -47,11 +78,19 @@ export async function initAuth() {
     authStore.user = data.session?.user ?? null;
     if (authStore.user) await loadProfile();
 
-    // Keep the store in sync on login / logout / token refresh.
+    // Keep the store in sync on login / logout / token refresh. Only refetch
+    // the profile when the account actually changes — this skips the immediate
+    // initial-session replay (already handled above) and every token refresh,
+    // which were each firing a duplicate `profiles` request.
     supabase.auth.onAuthStateChange((_event, session) => {
-      authStore.user = session?.user ?? null;
-      if (authStore.user) loadProfile();
-      else authStore.profile = null;
+      const user = session?.user ?? null;
+      authStore.user = user;
+      if (!user) {
+        authStore.profile = null;
+        loadedProfileUid = null;
+      } else if (user.id !== loadedProfileUid) {
+        loadProfile();
+      }
     });
   } catch (e) {
     console.warn("[auth] init failed", e);
@@ -70,6 +109,7 @@ export async function signIn(email, password) {
   if (error) throw error;
   authStore.user = data.user;
   await loadProfile();
+  syncUserData();
   return data.user;
 }
 
@@ -101,6 +141,8 @@ export async function signUp({ name, nationality, phone, email, password, accept
   if (data.session) {
     authStore.user = data.user;
     await loadProfile();
+    // Adopt any data the user created as a guest before signing up.
+    syncUserData();
   }
   return { needsConfirmation };
 }
@@ -130,4 +172,43 @@ export async function signOut() {
   await supabase.auth.signOut();
   authStore.user = null;
   authStore.profile = null;
+  // Clear cached reminders/history/settings so the next user on this device
+  // doesn't inherit them. The data remains safe on the server.
+  await clearUserData();
+}
+
+/**
+ * Update the editable profile fields (name / nationality / phone) on the user's
+ * `profiles` row and refresh the local copy. Throws on failure.
+ */
+export async function updateProfile({ name, nationality, phone }) {
+  if (!authStore.user) throw new Error("not authenticated");
+  const patch = {
+    name: (name ?? "").trim(),
+    nationality: (nationality ?? "").trim(),
+    phone: (phone ?? "").trim(),
+  };
+  const { error } = await supabase
+    .from("profiles")
+    .update(patch)
+    .eq("id", authStore.user.id);
+  if (error) throw error;
+  // Reflect immediately without an extra round-trip.
+  authStore.profile = { ...(authStore.profile || {}), ...patch };
+}
+
+/** Change the logged-in user's password. Throws on failure (e.g. too short). */
+export async function changePassword(newPassword) {
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
+  if (error) throw error;
+}
+
+/**
+ * Permanently delete the account and all its data via the `delete_user` RPC
+ * (see supabase/schema.sql), then sign out locally. Irreversible.
+ */
+export async function deleteAccount() {
+  const { error } = await supabase.rpc("delete_user");
+  if (error) throw error;
+  await signOut();
 }

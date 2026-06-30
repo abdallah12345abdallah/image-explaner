@@ -9,8 +9,26 @@
     </AppNavbar>
 
     <ion-content :fullscreen="true" :dir="dir" class="page">
+      <ion-refresher slot="fixed" @ionRefresh="onRefresh">
+        <ion-refresher-content></ion-refresher-content>
+      </ion-refresher>
+
       <div class="wrap">
-        <template v-if="upcomingItems.length || pastItems.length">
+        <!-- while fetching from the server → skeletons in place of the cards -->
+        <template v-if="loading">
+          <div class="list" aria-busy="true">
+            <div v-for="n in 4" :key="n" class="item skel">
+              <span class="ico"><ion-skeleton-text :animated="true" /></span>
+              <div class="text">
+                <ion-skeleton-text :animated="true" class="s-line w60" />
+                <ion-skeleton-text :animated="true" class="s-line w40" />
+                <ion-skeleton-text :animated="true" class="s-line w30" />
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <template v-else-if="upcomingItems.length || pastItems.length">
           <template v-if="upcomingItems.length">
             <h2 class="section-h">{{ t("appts.upcoming") }}</h2>
             <div class="list">
@@ -66,7 +84,7 @@
 
     <save-appointment-modal
       v-model:open="modalOpen"
-      :initial="null"
+      :initial="editInitial"
       @save="onSave"
     />
 
@@ -74,6 +92,7 @@
       v-model:open="detailOpen"
       :appointment="viewing"
       @delete="onDetailDelete"
+      @edit="onDetailEdit"
     />
   </ion-page>
 </template>
@@ -83,6 +102,10 @@ import {
   IonPage,
   IonContent,
   IonIcon,
+  IonSkeletonText,
+  IonRefresher,
+  IonRefresherContent,
+  onIonViewWillEnter,
 } from "@ionic/vue";
 import {
   addOutline,
@@ -97,7 +120,9 @@ import {
   upcoming,
   past,
   addAppointment,
+  updateAppointment,
   removeAppointment,
+  syncAppointments,
 } from "@/stores/appointments";
 import { formatArabicDateTime } from "@/services/datetime";
 import { t, dir, leadLabel } from "@/i18n";
@@ -118,15 +143,35 @@ const pastItems = computed(() => {
   void appointmentsStore.items;
   return past();
 });
+// Skeletons show only while fetching with nothing cached to display.
+const loading = computed(() => appointmentsStore.loading);
+
+// Refresh from the server whenever the page is opened so the list reflects
+// changes from other devices (startup sync already armed the notifications).
+onIonViewWillEnter(() => {
+  syncAppointments().catch(() => {});
+});
+
+// Pull-to-refresh: refresh in place (no skeleton) and end the spinner.
+async function onRefresh(ev) {
+  try {
+    await syncAppointments({ silent: true });
+  } finally {
+    ev.target.complete();
+  }
+}
 
 
 const modalOpen = ref(false);
+// null → add mode; an appointment record → edit mode.
+const editInitial = ref(null);
 
 function openAdd() {
+  editInitial.value = null;
   modalOpen.value = true;
 }
 
-// view panel (read-only) + delete
+// view panel (read-only) + delete/edit
 const detailOpen = ref(false);
 const viewing = ref(null);
 function openView(a) {
@@ -138,9 +183,19 @@ async function onDetailDelete() {
   detailOpen.value = false;
   if (a) await onDelete(a);
 }
+function onDetailEdit() {
+  const a = viewing.value;
+  detailOpen.value = false;
+  // Let the detail sheet animate away before opening the edit sheet.
+  setTimeout(() => {
+    editInitial.value = a ? { ...a } : null;
+    modalOpen.value = true;
+  }, 260);
+}
 
 async function onSave(payload) {
-  await addAppointment(payload);
+  if (payload.id) await updateAppointment(payload.id, payload);
+  else await addAppointment(payload);
   await notifyResult(payload.datetimeISO);
 }
 
@@ -184,6 +239,16 @@ async function onDelete(a) {
 .text small.loc { display: inline-flex; align-items: center; gap: 4px; }
 .lead-tag { align-self: flex-start; margin-top: 4px; font-size: 0.72rem; font-weight: 700; color: var(--ion-color-primary); background: rgba(13,148,136,0.1); padding: 2px 8px; border-radius: 999px; }
 .del { flex: 0 0 auto; width: 34px; height: 34px; border: none; border-radius: 10px; background: rgba(239,68,68,0.08); color: #ef4444; font-size: 1.1rem; display: grid; place-items: center; cursor: pointer; }
+
+/* skeleton placeholders while the GET is in flight */
+.item.skel { cursor: default; }
+.item.skel:active { transform: none; }
+.item.skel .ico { background: none; overflow: hidden; }
+.item.skel .ico ion-skeleton-text { width: 100%; height: 100%; margin: 0; --border-radius: 13px; }
+.s-line { --border-radius: 6px; margin: 0; height: 13px; }
+.s-line.w60 { width: 60%; height: 15px; }
+.s-line.w40 { width: 40%; }
+.s-line.w30 { width: 30%; height: 11px; }
 
 .empty { text-align: center; color: #7a8a88; padding: 48px 18px; }
 .empty-ico { font-size: 3rem; color: rgba(13,148,136,0.4); }

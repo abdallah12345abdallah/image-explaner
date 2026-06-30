@@ -9,8 +9,24 @@
     </AppNavbar>
 
     <ion-content :fullscreen="true" :dir="dir" class="page">
+      <ion-refresher slot="fixed" @ionRefresh="onRefresh">
+        <ion-refresher-content></ion-refresher-content>
+      </ion-refresher>
+
       <div class="wrap">
-        <div v-if="items.length" class="list">
+        <!-- while fetching from the server → skeletons in place of the cards -->
+        <div v-if="loading" class="list" aria-busy="true">
+          <div v-for="n in 6" :key="n" class="item skel">
+            <span class="thumb"><ion-skeleton-text :animated="true" /></span>
+            <div class="text">
+              <ion-skeleton-text :animated="true" class="s-line w70" />
+              <ion-skeleton-text :animated="true" class="s-line w40" />
+              <ion-skeleton-text :animated="true" class="s-line w30" />
+            </div>
+          </div>
+        </div>
+
+        <div v-else-if="items.length" class="list">
           <div v-for="h in items" :key="h.id" class="item" @click="openItem(h)">
             <img v-if="h.thumb" :src="h.thumb" class="thumb" alt="" />
             <span v-else class="thumb ph"><ion-icon :icon="documentTextOutline"></ion-icon></span>
@@ -31,6 +47,19 @@
         </div>
       </div>
     </ion-content>
+
+    <history-detail-modal
+      v-model:open="detailOpen"
+      :item="selected"
+      @delete="onDetailDelete"
+      @add-appointment="onAddAppointment"
+    />
+
+    <save-appointment-modal
+      v-model:open="saveOpen"
+      :initial="saveInitial"
+      @save="onSave"
+    />
   </ion-page>
 </template>
 
@@ -39,21 +68,84 @@ import {
   IonPage,
   IonContent,
   IonIcon,
-  useIonRouter,
+  IonSkeletonText,
+  IonRefresher,
+  IonRefresherContent,
+  onIonViewWillEnter,
 } from "@ionic/vue";
 import {
   trashOutline,
   documentTextOutline,
   timeOutline,
 } from "ionicons/icons";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import AppNavbar from "@/components/AppNavbar.vue";
+import HistoryDetailModal from "@/components/HistoryDetailModal.vue";
+import SaveAppointmentModal from "@/components/SaveAppointmentModal.vue";
 import { t, dir, localeTag } from "@/i18n";
-import { historyStore, removeHistory, clearHistory } from "@/stores/history";
-import { setResult } from "@/stores/result";
+import { historyStore, removeHistory, clearHistory, syncHistory } from "@/stores/history";
+import { addAppointment } from "@/stores/appointments";
+import { hasPermission } from "@/services/notifications";
+import { useToast } from "@/composables/useToast";
 
-const ionRouter = useIonRouter();
+const { showSuccess, showWarning } = useToast();
+
+// Pull the latest history from the server each time this page is opened (no-op
+// when logged out). The local cache renders instantly meanwhile.
+onIonViewWillEnter(() => {
+  syncHistory().catch(() => {});
+});
+
+// Pull-to-refresh: refresh in place (no skeleton) and end the spinner.
+async function onRefresh(ev) {
+  try {
+    await syncHistory({ silent: true });
+  } finally {
+    ev.target.complete();
+  }
+}
+
 const items = computed(() => historyStore.items);
+// Show skeletons only while fetching with nothing cached to display.
+const loading = computed(() => historyStore.loading);
+
+// --- detail panel ---
+const selected = ref(null);
+const detailOpen = ref(false);
+
+function openItem(h) {
+  selected.value = h;
+  detailOpen.value = true;
+}
+function onDetailDelete() {
+  if (selected.value) removeHistory(selected.value.id);
+  detailOpen.value = false;
+}
+
+// --- "add as appointment" from the panel ---
+const saveOpen = ref(false);
+const saveInitial = computed(() => {
+  const d = selected.value?.data || {};
+  return {
+    title: d.title_ar || d.document_type || t("modal.defaultTitle"),
+    datetimeISO: d.appointment_datetime || "",
+    location: d.location_ar || "",
+  };
+});
+function onAddAppointment() {
+  // Close the detail sheet first, then open the save sheet once it has
+  // animated away (avoids two bottom-sheets fighting over the screen).
+  detailOpen.value = false;
+  setTimeout(() => {
+    saveOpen.value = true;
+  }, 260);
+}
+async function onSave(payload) {
+  await addAppointment(payload);
+  const granted = await hasPermission();
+  if (granted) showSuccess(t("appts.saved"));
+  else showWarning(t("appts.savedNoPerm"));
+}
 
 function fmt(iso) {
   try {
@@ -69,10 +161,6 @@ function fmt(iso) {
   }
 }
 
-function openItem(h) {
-  setResult(h.data, h.thumb || null);
-  ionRouter.push("/result", "forward");
-}
 function onRemove(h) {
   removeHistory(h.id);
 }
@@ -95,6 +183,17 @@ function onClear() {
 .item:active { transform: scale(0.98); }
 .thumb { flex: 0 0 auto; width: 54px; height: 54px; border-radius: 12px; object-fit: cover; }
 .thumb.ph { display: grid; place-items: center; background: rgba(13,148,136,0.1); color: var(--ion-color-primary); font-size: 1.5rem; }
+
+/* skeleton placeholders while the GET is in flight */
+.item.skel { cursor: default; }
+.item.skel:active { transform: none; }
+.item.skel .thumb { overflow: hidden; }
+.item.skel .thumb ion-skeleton-text { width: 100%; height: 100%; margin: 0; --border-radius: 12px; }
+.item.skel .text { gap: 7px; }
+.s-line { --border-radius: 6px; margin: 0; height: 12px; }
+.s-line.w70 { width: 70%; height: 14px; }
+.s-line.w40 { width: 40%; }
+.s-line.w30 { width: 30%; height: 10px; }
 .text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .text strong { font-size: 1rem; font-weight: 700; color: #1b2524; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .text small { font-size: 0.8rem; color: #7a8a88; }

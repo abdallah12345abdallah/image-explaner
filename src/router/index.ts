@@ -53,6 +53,11 @@ const routes: Array<RouteRecordRaw> = [
     name: 'Settings',
     component: () => import('../views/SettingsPage.vue'),
   },
+  {
+    path: '/account',
+    name: 'Account',
+    component: () => import('../views/AccountPage.vue'),
+  },
 ];
 
 const router = createRouter({

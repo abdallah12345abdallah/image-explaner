@@ -53,6 +53,14 @@
               <p class="r-value">{{ leadLabel(a.leadMinutes) }}</p>
             </div>
           </div>
+
+          <div v-if="a.recurrence && a.recurrence !== 'none'" class="row">
+            <span class="r-ico teal"><ion-icon :icon="repeatOutline"></ion-icon></span>
+            <div class="r-text">
+              <p class="r-label">{{ t("modal.repeat") }}</p>
+              <p class="r-value">{{ t("recur." + a.recurrence) }}</p>
+            </div>
+          </div>
         </div>
       </ion-content>
 
@@ -60,6 +68,10 @@
         <button class="act delete" @click="emit('delete')">
           <ion-icon :icon="trashOutline"></ion-icon>
           {{ t("common.delete") }}
+        </button>
+        <button class="act edit" @click="emit('edit')">
+          <ion-icon :icon="createOutline"></ion-icon>
+          {{ t("common.edit") }}
         </button>
       </div>
     </div>
@@ -77,6 +89,8 @@ import {
   notificationsOutline,
   navigateOutline,
   trashOutline,
+  createOutline,
+  repeatOutline,
   checkmarkDoneOutline,
 } from "ionicons/icons";
 import { t, dir, localeTag, leadLabel } from "@/i18n";
@@ -86,7 +100,7 @@ const props = defineProps({
   open: { type: Boolean, default: false },
   appointment: { type: Object, default: null },
 });
-const emit = defineEmits(["update:open", "delete"]);
+const emit = defineEmits(["update:open", "delete", "edit"]);
 
 const a = computed(() => props.appointment);
 const fmt = (iso) => formatArabicDateTime(iso);
@@ -244,6 +258,11 @@ function close() {
 .act:active { transform: scale(0.97); }
 .act ion-icon { font-size: 1.2rem; }
 .act.delete {
+  flex: 0 0 auto; width: 54px;
   background: rgba(239, 68, 68, 0.1); color: #ef4444;
+}
+.act.edit {
+  background: linear-gradient(100deg, #0d9488, #14b8a6); color: #fff;
+  box-shadow: 0 10px 22px rgba(13, 148, 136, 0.32);
 }
 </style>

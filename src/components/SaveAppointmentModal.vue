@@ -55,6 +55,21 @@
           </button>
         </div>
       </div>
+
+      <div class="field">
+        <span class="lbl">{{ t("modal.repeat") }}</span>
+        <div class="leads">
+          <button
+            v-for="opt in recurOptions"
+            :key="opt.value"
+            class="lead"
+            :class="{ active: recurrence === opt.value }"
+            @click="recurrence = opt.value"
+          >
+            {{ opt.label }}
+          </button>
+        </div>
+      </div>
       </ion-content>
     </div>
   </ion-modal>
@@ -75,17 +90,25 @@ const props = defineProps({
 const emit = defineEmits(["update:open", "save"]);
 
 const leadOptions = computed(() => i18nLeadOptions());
+const recurOptions = computed(() => [
+  { value: "none", label: t("recur.none") },
+  { value: "daily", label: t("recur.daily") },
+  { value: "weekly", label: t("recur.weekly") },
+  { value: "monthly", label: t("recur.monthly") },
+]);
 
 const title = ref("");
 const dt = ref("");
 const location = ref("");
 const lead = ref(30);
+const recurrence = ref("none");
 
 function seed() {
   const i = props.initial || {};
   title.value = i.title || "";
   location.value = i.location || "";
   lead.value = i.leadMinutes || settingsStore.defaultLeadMinutes || 30;
+  recurrence.value = i.recurrence || "none";
   // default datetime: provided ISO if valid, else now + 1 hour
   let base = i.datetimeISO ? new Date(i.datetimeISO) : null;
   if (!base || isNaN(base.getTime())) {
@@ -114,6 +137,7 @@ function onSave() {
     datetimeISO: toLocalISO(d),
     location: location.value.trim(),
     leadMinutes: lead.value,
+    recurrence: recurrence.value,
   });
   close();
 }

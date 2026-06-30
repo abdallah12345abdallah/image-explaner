@@ -80,3 +80,27 @@ export function genNumericId(exclude = []) {
 export function genStringId(prefix = "id") {
   return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
 }
+
+// An RFC-4122 v4 UUID. Used as the primary key for synced records so a row can
+// be created offline with a stable id and upserted to Supabase (uuid column)
+// later. Prefers the native crypto generator, falls back to Math.random.
+export function genUUID() {
+  try {
+    if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+  } catch {
+    /* fall through */
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = Math.floor(Math.random() * 16);
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
+// True if `s` looks like a UUID (used to detect pre-sync local ids to migrate).
+export function isUUID(s) {
+  return (
+    typeof s === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s)
+  );
+}

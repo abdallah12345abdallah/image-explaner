@@ -190,8 +190,13 @@ async function onExplain() {
   loading.value = true;
   try {
     const data = await explainImage(captured.value, localeTag());
-    setResult(data, captured.value.previewUrl);
-    addHistory(data, captured.value.previewUrl); // fire-and-forget persist
+    const previewUrl = captured.value.previewUrl;
+    setResult(data, previewUrl);
+    // Save to history (server-only); warn if it couldn't be stored. Doesn't
+    // block navigation to the result.
+    addHistory(data, previewUrl).then((ok) => {
+      if (!ok) showError(t("history.saveFailed"));
+    });
     reset();
     ionRouter.push("/result", "forward");
   } catch (e) {

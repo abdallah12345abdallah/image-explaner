@@ -48,7 +48,7 @@ import './theme/dialog.css';
 import { loadLocale } from './i18n';
 import { initAuth } from './stores/auth';
 import { loadSettings } from './stores/settings';
-import { loadAppointments, rescheduleAll } from './stores/appointments';
+import { loadAppointments, rescheduleAll, syncAppointments } from './stores/appointments';
 import { loadHistory } from './stores/history';
 import { registerTapHandler } from './services/notifications';
 
@@ -116,6 +116,10 @@ async function bootstrap() {
     await loadHistory();
     await rescheduleAll();
     await registerTapHandler(router);
+    // Reminders sync at startup so reminders created on another device get
+    // scheduled with the OS even if the user never opens the Reminders tab.
+    // History and settings sync lazily when their own page is opened.
+    syncAppointments().catch((e) => console.warn('appointment sync error', e));
   } catch (e) {
     // non-fatal — app still runs without persisted data
     console.warn('bootstrap error', e);
